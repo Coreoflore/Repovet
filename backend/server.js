@@ -26,8 +26,10 @@ app.use(cors({
   origin: (origin, callback) => {
     if (!origin || allowedOrigins.includes(origin)) {
       callback(null, true);
+    } else if (process.env.NODE_ENV !== 'production') {
+      callback(null, true); // Allow dev fallback only when not in production
     } else {
-      callback(null, true); // Allow dev fallback
+      callback(new Error('Not allowed by CORS'));
     }
   },
   methods: ['GET', 'POST', 'DELETE'],

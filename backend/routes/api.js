@@ -12,6 +12,23 @@ import {
   generateQuestions
 } from '../services/aiService.js';
 import { sendLogToDiscord } from '../services/discordService.js';
+import rateLimit from 'express-rate-limit';
+
+const strictLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 5, // 5 requests per IP
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many requests. Please try again later.' }
+});
+
+const contactLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hour
+  max: 3, // 3 messages per IP
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many messages sent. Please try again later.' }
+});
 
 const router = express.Router();
 
@@ -196,10 +213,14 @@ router.post('/upload-resume', uploadResume, asyncHandler(async (request, respons
   response.json({ resumeText });
 }));
 
-router.post('/sessions', asyncHandler(async (request, response) => {
+router.post('/sessions', strictLimiter, asyncHandler(async (request, response) => {
   const { resumeText, repoUrls = [], repoUrl = '', targetRole, questionCount } = request.body || {};
   if (typeof resumeText !== 'string' || !resumeText.trim()) {
     response.status(400).json({ error: 'resumeText is required.' });
+    return;
+  }
+  if (resumeText.length > 200000) {
+    response.status(400).json({ error: 'resumeText is too long.' });
     return;
   }
   const resumeValidation = validateResumeText(resumeText);
@@ -209,6 +230,10 @@ router.post('/sessions', asyncHandler(async (request, response) => {
   }
   if (typeof targetRole !== 'string' || !targetRole.trim()) {
     response.status(400).json({ error: 'targetRole is required.' });
+    return;
+  }
+  if (targetRole.length > 100) {
+    response.status(400).json({ error: 'targetRole must be under 100 characters.' });
     return;
   }
 
@@ -276,6 +301,10 @@ router.post('/sessions/:id/answer', asyncHandler(async (request, response) => {
   }
   if (questionId === undefined || questionId === null || questionId === '' || typeof answerText !== 'string' || !answerText.trim()) {
     response.status(400).json({ error: 'questionId and answerText are required.' });
+    return;
+  }
+  if (answerText.length > 50000) {
+    response.status(400).json({ error: 'Answer text is too long.' });
     return;
   }
 
@@ -348,6 +377,10 @@ router.post('/sessions/:id/report', asyncHandler(async (request, response) => {
     response.status(404).json({ error: 'Session not found.' });
     return;
   }
+  if (session.status === 'completed' && session.finalReport) {
+    response.json(session.finalReport);
+    return;
+  }
 
   const [candidate, answers] = await Promise.all([
     Candidate.findById(session.candidateId).lean(),
@@ -399,19 +432,19 @@ router.post('/sessions/:id/report', asyncHandler(async (request, response) => {
   response.json(report);
 }));
 
-router.post('/contact', asyncHandler(async (request, response) => {
+router.post('/contact', contactLimiter, asyncHandler(async (request, response) => {
   const { name, email, message } = request.body || {};
 
-  if (!name || !name.trim()) {
-    response.status(400).json({ error: 'Name is required.' });
+  if (!name || !name.trim() || name.length > 100) {
+    response.status(400).json({ error: 'Name is required and must be under 100 characters.' });
     return;
   }
-  if (!email || !email.trim() || !/^[\w.+-]+@[\w-]+(?:\.[\w-]+)+$/.test(email)) {
+  if (!email || !email.trim() || email.length > 150 || !/^[\w.+-]+@[\w-]+(?:\.[\w-]+)+$/.test(email)) {
     response.status(400).json({ error: 'Valid email is required.' });
     return;
   }
-  if (!message || !message.trim()) {
-    response.status(400).json({ error: 'Message is required.' });
+  if (!message || !message.trim() || message.length > 5000) {
+    response.status(400).json({ error: 'Message is required and must be under 5000 characters.' });
     return;
   }
 

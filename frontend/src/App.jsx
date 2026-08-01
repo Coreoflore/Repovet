@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import LandingPage from './pages/LandingPage.jsx';
 import InterviewPage from './pages/InterviewPage.jsx';
 import ReportPage from './pages/ReportPage.jsx';
+import ContactPage from './pages/ContactPage.jsx';
 
 const historyStorageKey = 'repovet:history';
 
@@ -65,9 +66,12 @@ function AppFooter() {
         <p className="flex items-center gap-1.5 font-medium text-slate-400">
           Made with <span className="text-rose-500">❤️</span> by <span className="text-cyan-300 font-semibold">Team Cadence</span>
         </p>
-        <p className="text-slate-600">
-          Repovet &copy; {new Date().getFullYear()}
-        </p>
+        <div className="flex items-center gap-6">
+          <a href="/contact" className="hover:text-cyan-300 transition-colors">Contact Us</a>
+          <p className="text-slate-600">
+            Repovet &copy; {new Date().getFullYear()}
+          </p>
+        </div>
       </div>
     </footer>
   );
@@ -104,6 +108,7 @@ function AppContent() {
             <Route path="/" element={<LandingPage history={history} />} />
             <Route path="/interview/:sessionId" element={<InterviewPage onAddToHistory={handleAddToHistory} />} />
             <Route path="/report/:sessionId" element={<ReportPage onDeleteFromHistory={handleDeleteFromHistory} />} />
+            <Route path="/contact" element={<ContactPage />} />
             <Route path="*" element={
               <div className="mx-auto max-w-2xl py-24 text-center">
                 <h1 className="text-6xl font-bold text-white">404</h1>

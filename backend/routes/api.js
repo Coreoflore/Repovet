@@ -399,4 +399,40 @@ router.post('/sessions/:id/report', asyncHandler(async (request, response) => {
   response.json(report);
 }));
 
+router.post('/contact', asyncHandler(async (request, response) => {
+  const { name, email, message } = request.body || {};
+
+  if (!name || !name.trim()) {
+    response.status(400).json({ error: 'Name is required.' });
+    return;
+  }
+  if (!email || !email.trim() || !/^[\w.+-]+@[\w-]+(?:\.[\w-]+)+$/.test(email)) {
+    response.status(400).json({ error: 'Valid email is required.' });
+    return;
+  }
+  if (!message || !message.trim()) {
+    response.status(400).json({ error: 'Message is required.' });
+    return;
+  }
+
+  try {
+    const { sendContactEmail } = await import('../services/mailService.js');
+    await sendContactEmail(name.trim(), email.trim(), message.trim());
+    response.status(200).json({ success: true, message: 'Message sent successfully.' });
+  } catch (error) {
+    console.error('Failed to send contact email:', error);
+    sendLogToDiscord(
+      '📧 Contact Form Email Failed',
+      `Failed to send email from ${name} (${email}).`,
+      [
+        { name: 'Error', value: error.message, inline: true }
+      ],
+      15158332
+    );
+    // Respond with success to not let the user know if email sending fails internally,
+    // or we can respond with error. Responding with 500 is standard.
+    response.status(500).json({ error: 'Failed to send message. Please try again later.' });
+  }
+}));
+
 export default router;

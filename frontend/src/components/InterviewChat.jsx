@@ -58,6 +58,12 @@ export default function InterviewChat({ questions, sessionId, onAnswer, onFinish
   }, []);
 
   useEffect(() => {
+    const handleRequestExit = () => setShowExitModal(true);
+    window.addEventListener('requestExitInterview', handleRequestExit);
+    return () => window.removeEventListener('requestExitInterview', handleRequestExit);
+  }, []);
+
+  useEffect(() => {
     window.speechSynthesis?.cancel();
     setIsPlayingAudio(false);
     return () => {

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { sendContactMessage } from '../services/api.js';
 
 export default function ContactPage() {
   const [formData, setFormData] = useState({ name: '', email: '', message: '' });
@@ -16,29 +17,13 @@ export default function ContactPage() {
     setErrorMessage('');
 
     try {
-      // In development, the proxy will handle this, but if in production use the right URL
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
-      const response = await fetch(`${apiUrl}/api/contact`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData),
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        setStatus('success');
-        setFormData({ name: '', email: '', message: '' });
-      } else {
-        setStatus('error');
-        setErrorMessage(data.error || 'Failed to send message. Please try again.');
-      }
+      await sendContactMessage(formData);
+      setStatus('success');
+      setFormData({ name: '', email: '', message: '' });
     } catch (error) {
       console.error('Submission error:', error);
       setStatus('error');
-      setErrorMessage('A network error occurred. Please try again.');
+      setErrorMessage(error.message || 'A network error occurred. Please try again.');
     }
   };
 

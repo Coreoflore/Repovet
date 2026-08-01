@@ -40,3 +40,11 @@ export function deleteSession(sessionId) {
 export function getSession(sessionId) {
   return request(`/sessions/${sessionId}`);
 }
+
+export function sendContactMessage(formData) {
+  return request('/contact', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(formData)
+  });
+}

@@ -147,7 +147,7 @@ async function requestJson(system, user) {
     throw new Error('GROQ_API_KEY is not configured.');
   }
 
-  const model = process.env.GROQ_MODEL || 'llama-3.3-70b-versatile';
+  const model = process.env.GROQ_MODEL || 'meta-llama/llama-prompt-guard-2-86m';
   const timeoutMs = Number(process.env.GROQ_TIMEOUT_MS || 45000);
   let lastError = null;
 

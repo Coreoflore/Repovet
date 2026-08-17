@@ -56,7 +56,7 @@ export default function OnboardingForm({ onSessionReady }) {
   async function handleSubmit(event) {
     event.preventDefault();
     if (!file) {
-      setError('Choose a PDF or DOCX resume to begin.');
+      setError('Choose a PDF or DOCX resume to begin. Testing if this works');
       return;
     }
     if (!targetRole.trim()) {

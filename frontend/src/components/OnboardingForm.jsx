@@ -412,7 +412,7 @@ export default function OnboardingForm({ onSessionReady }) {
         {error && <p className="mt-5 rounded-lg bg-rose-400/10 px-3 py-2 text-sm text-rose-200">{error}</p>}
 
         <button disabled={isLoading} type="submit" className="mt-7 flex w-full items-center justify-center rounded-xl bg-cyan-300 px-4 py-3.5 text-sm font-semibold text-slate-950 transition hover:bg-cyan-200 disabled:cursor-wait disabled:opacity-60">
-          {isLoading ? (parsedResumeText ? 'Analyzing repos and generating tailored questions...' : 'Reading and validating resume...') : parsedResumeText ? 'Confirm resume and build interview' : 'Scannnnnn resume'}
+          {isLoading ? (parsedResumeText ? 'Analyzing repos and generating tailored questions...' : 'Reading and validating resume...') : parsedResumeText ? 'Confirm resume and build interview' : 'Scan resume'}
         </button>
       </form>
     </section>

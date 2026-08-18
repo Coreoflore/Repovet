@@ -147,7 +147,7 @@ async function requestJson(system, user) {
     throw new Error('GROQ_API_KEY is not configured.');
   }
 
-  const model = process.env.GROQ_MODEL || 'openai/gpt-oss-20b';
+  const model = process.env.GROQ_MODEL;
   const timeoutMs = Number(process.env.GROQ_TIMEOUT_MS || 45000);
   let lastError = null;
 

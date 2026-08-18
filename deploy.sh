@@ -15,7 +15,7 @@ echo "Updating backend dependencies..."
 cd backend
 npm install
 echo "Restarting backend service in PM2 with updated environment..."
-pm2 restart repovet-backend --update-env
+pm2 restart repovet-backend-dev --update-env
 
 # 3. Rebuild Frontend static assets
 echo "Updating frontend dependencies..."

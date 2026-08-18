@@ -14,8 +14,8 @@ git pull
 echo "Updating backend dependencies..."
 cd backend
 npm install
-echo "Restarting backend service in PM2..."
-pm2 restart repovet-backend
+echo "Restarting backend service in PM2 with updated environment..."
+pm2 restart repovet-backend --update-env
 
 # 3. Rebuild Frontend static assets
 echo "Updating frontend dependencies..."

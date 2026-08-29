@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import MarkdownRenderer from './MarkdownRenderer.jsx';
+import FullStackRoadmap from './roadmap/FullStackRoadmap.jsx';
 
 function ListSection({ title, items, className = '' }) {
   return (
@@ -121,12 +122,17 @@ export default function ReportView({ report, targetRole, onRestart, onDelete }) 
       <div className="mb-6 flex flex-wrap gap-2 rounded-2xl border border-white/10 bg-white/[0.035] p-2" role="tablist" aria-label="Report view">
         <button type="button" role="tab" aria-selected={viewMode === 'candidate'} onClick={() => setViewMode('candidate')} className={`rounded-xl px-4 py-2.5 text-sm transition ${viewMode === 'candidate' ? 'bg-cyan-300 text-slate-950' : 'text-slate-400 hover:text-white'}`}>Candidate feedback</button>
         <button type="button" role="tab" aria-selected={viewMode === 'evidence'} onClick={() => setViewMode('evidence')} className={`rounded-xl px-4 py-2.5 text-sm transition ${viewMode === 'evidence' ? 'bg-cyan-300 text-slate-950' : 'text-slate-400 hover:text-white'}`}>Evidence review</button>
+        {report.roadmapProgress && (
+          <button type="button" role="tab" aria-selected={viewMode === 'roadmap'} onClick={() => setViewMode('roadmap')} className={`rounded-xl px-4 py-2.5 text-sm transition ${viewMode === 'roadmap' ? 'bg-cyan-300 text-slate-950' : 'text-slate-400 hover:text-white'}`}>Your Full-Stack Roadmap</button>
+        )}
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2">
-        <ListSection title="Strengths" items={strengths} className="border-emerald-300/20 bg-emerald-300/[0.06] text-emerald-300" />
-        <ListSection title="Gaps" items={gaps} className="border-amber-300/20 bg-amber-300/[0.06] text-amber-300" />
-      </div>
+      {viewMode !== 'roadmap' && (
+        <div className="grid gap-6 md:grid-cols-2">
+          <ListSection title="Strengths" items={strengths} className="border-emerald-300/20 bg-emerald-300/[0.06] text-emerald-300" />
+          <ListSection title="Gaps" items={gaps} className="border-amber-300/20 bg-amber-300/[0.06] text-amber-300" />
+        </div>
+      )}
 
       {viewMode === 'evidence' && <section className="mt-6 rounded-2xl border border-rose-400/40 bg-rose-400/[0.09] p-6 shadow-[0_0_50px_rgba(251,113,133,0.08)] sm:p-8">
         <div className="flex flex-wrap items-center gap-3">
@@ -143,6 +149,10 @@ export default function ReportView({ report, targetRole, onRestart, onDelete }) 
 
       {viewMode === 'candidate' && <AnswerReviewSection reviews={answerReviews} />}
       {viewMode === 'evidence' && <EvidenceSection evidence={evidence} />}
+      
+      {viewMode === 'roadmap' && report.roadmapProgress && (
+        <FullStackRoadmap roadmapProgress={report.roadmapProgress} />
+      )}
     </section>
   );
 }

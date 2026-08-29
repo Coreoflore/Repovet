@@ -4,6 +4,8 @@
   "description": "Repovet analyzes your resume and GitHub repositories together to generate realistic, project-grounded technical interview practice and feedback.",
   "main": "index.js",
   "scripts": {
+    "dev": "start cmd /c \"cd backend && npm run dev\" && start cmd /c \"cd frontend && npm run dev\"",
+    "install:all": "npm install && cd backend && npm install && cd ../frontend && npm install",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {

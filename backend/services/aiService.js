@@ -1,4 +1,6 @@
 import Groq from 'groq-sdk';
+import { fullStackRoadmap } from '../roadmaps/fullStack.js';
+import { computeRoadmapProgress } from './roadmapStatus.js';
 
 function getGroqApiKeys() {
   const keys = [];
@@ -107,7 +109,7 @@ function normalizeEvidence(value, evidenceCorpus) {
   }).filter((item) => item.claim && item.detail);
 }
 
-export function normalizeFinalReport(result, sessionData = {}, answersArray = []) {
+export function normalizeFinalReport(result, sessionData = {}, answersArray = [], isFullStack = false) {
   const repoDataList = Array.isArray(sessionData.repoData) ? sessionData.repoData : [sessionData.repoData].filter(Boolean);
   
   const corpusElements = [
@@ -127,10 +129,34 @@ export function normalizeFinalReport(result, sessionData = {}, answersArray = []
     .filter(Boolean)
     .join('\n');
 
-  return {
+  const rawStrengths = Array.isArray(result.strengths) ? result.strengths : [];
+  const rawGaps = Array.isArray(result.gaps) ? result.gaps : [];
+  
+  const strengthsObj = [];
+  const gapsObj = [];
+  
+  const strengthsStrings = rawStrengths.map(item => {
+    if (typeof item === 'string') return item;
+    if (item && typeof item === 'object') {
+      strengthsObj.push({ text: item.text || item.message || '', roadmapNodeId: item.roadmapNodeId });
+      return item.text || item.message || '';
+    }
+    return String(item);
+  }).filter(Boolean);
+  
+  const gapsStrings = rawGaps.map(item => {
+    if (typeof item === 'string') return item;
+    if (item && typeof item === 'object') {
+      gapsObj.push({ text: item.text || item.message || '', roadmapNodeId: item.roadmapNodeId });
+      return item.text || item.message || '';
+    }
+    return String(item);
+  }).filter(Boolean);
+
+  const baseReport = {
     recommended_level: String(result.recommended_level || 'Needs further review'),
-    strengths: stringList(result.strengths),
-    gaps: stringList(result.gaps),
+    strengths: strengthsStrings,
+    gaps: gapsStrings,
     undefended_project: {
       name: String(result.undefended_project?.name || 'No project identified'),
       reason: String(result.undefended_project?.reason || 'The answers did not provide enough evidence to defend a specific project.')
@@ -139,6 +165,21 @@ export function normalizeFinalReport(result, sessionData = {}, answersArray = []
     answer_reviews: normalizeAnswerReviews(result.answer_reviews, evidenceCorpus),
     evidence: normalizeEvidence(result.evidence, evidenceCorpus)
   };
+  
+  if (isFullStack) {
+    const validIds = new Set(fullStackRoadmap.phases.flatMap(p => p.nodes.map(n => n.id)));
+    const cleanStrengths = strengthsObj.map(s => ({
+      text: s.text,
+      roadmapNodeId: validIds.has(s.roadmapNodeId) ? s.roadmapNodeId : undefined
+    }));
+    const cleanGaps = gapsObj.map(g => ({
+      text: g.text,
+      roadmapNodeId: validIds.has(g.roadmapNodeId) ? g.roadmapNodeId : undefined
+    }));
+    baseReport.roadmapProgress = computeRoadmapProgress(fullStackRoadmap, cleanStrengths, cleanGaps);
+  }
+
+  return baseReport;
 }
 
 async function requestJson(system, user) {
@@ -421,6 +462,15 @@ IMPORTANT REMINDERS:
 
 
 export async function generateFinalReport(sessionData, answersArray) {
+  const targetRole = String(sessionData.targetRole || '').trim().toLowerCase();
+  const isFullStack = targetRole === 'full stack' || targetRole === 'full-stack' || targetRole === 'full-stack developer' || targetRole === 'fullstack engineer' || targetRole === 'fullstack';
+  
+  let roadmapRules = '';
+  if (isFullStack) {
+    const nodeIds = fullStackRoadmap.phases.flatMap(p => p.nodes.map(n => n.id)).join(', ');
+    roadmapRules = `\n6. For strengths and gaps, output them as arrays of objects containing a 'text' string. If the strength/gap maps to one of the following Full-Stack roadmap IDs, include it as 'roadmapNodeId', otherwise omit the field. Valid IDs: ${nodeIds}.`;
+  }
+  
   const result = await requestJson(
     `ROLE
 You are a hiring manager writing a concise, evidence-based interview report.
@@ -441,9 +491,9 @@ RULES
 2. The next_steps array must be candidate-facing coaching for the person who submitted the resume and answered the interview questions, not instructions for the interviewer or hiring team.
 3. Write every next step directly to the candidate in the second person (for example, "Clarify...", "Add...", or "Practice..."). Never tell an interviewer to ask, probe, reject, advance, or schedule the candidate.
 4. Each answer_reviews item must have question_id (which must be the exact 0-based string index of the question, e.g. "0", "1", "2"), score (0-100), strengths (array), gaps (array), feedback (string), and evidence_quote (string).
-5. Each evidence item must have claim, source (resume, github, or answer), detail, and quote. Quotes must be exact excerpts from the supplied evidence; do not invent or paraphrase quotes.`,
+5. Each evidence item must have claim, source (resume, github, or answer), detail, and quote. Quotes must be exact excerpts from the supplied evidence; do not invent or paraphrase quotes.${roadmapRules}`,
     `Evaluate the candidate against the target role, original resume/repository evidence, and every answer. Treat unsupported claims and weak answers as gaps. The session context includes a deterministic answerQuality summary; treat it as authoritative evidence quality. If substantive_count is zero, do not report any strengths. Return 3-6 actionable candidate-facing next steps. Include resume-focused guidance for claims, project details, or missing evidence and answer-focused guidance for specificity, ownership, decisions, trade-offs, or measurable outcomes whenever those issues appear in the evidence. For answer_reviews, evaluate each question using the matching answer and score the answer itself, not the resume. For evidence, include only claims directly supported by the supplied material.\n\nSESSION AND ORIGINAL CONTEXT:\n<SESSION_AND_ORIGINAL_CONTEXT>\n${clip(sessionData, 24000)}\n</SESSION_AND_ORIGINAL_CONTEXT>\n\nANSWERS:\n<CANDIDATE_ANSWERS>\n${clip(answersArray, 18000)}\n</CANDIDATE_ANSWERS>`
   );
 
-  return normalizeFinalReport(result, sessionData, answersArray);
+  return normalizeFinalReport(result, sessionData, answersArray, isFullStack);
 }
